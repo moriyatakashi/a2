@@ -202,16 +202,14 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 		lineNumber = i;
 		var parsedLine = parseLine(arrayLines[i]);
 		endColTable[i] = parsedLine.endcol;
-		if (parsedLine.inst == "IN") {
-			if (!defined(window.opera) && defined(document.all) && defined(window.XMLHttpRequest)) if (!scriptAllowed) {
-				var str = prompt("IN命令が実行可能な環境になっているかの確認です。\r\nお手数ですが [OK] を押してください。入力欄は空でかまいません。","");
-				if (str != null) scriptAllowed = true;
-				else {
-					alert("情報バーに「スクリプト化されたウィンドウ」云々が出ていたら、お手数ですが、許可してから、[アセンブル] ボタンを押しなおしてください。IN命令の動作にはこの許可が必要です。");
-					return -1;
-				}
-			} else scriptAllowed = true;
-		}
+		if (parsedLine.inst == "IN") if (!defined(window.opera) && defined(document.all) && defined(window.XMLHttpRequest)) if (!scriptAllowed) {
+			var str = prompt("IN命令が実行可能な環境になっているかの確認です。\r\nお手数ですが [OK] を押してください。入力欄は空でかまいません。","");
+			if (str != null) scriptAllowed = true;
+			else {
+				alert("情報バーに「スクリプト化されたウィンドウ」云々が出ていたら、お手数ですが、許可してから、[アセンブル] ボタンを押しなおしてください。IN命令の動作にはこの許可が必要です。");
+				return -1;
+			}
+		} else scriptAllowed = true;
 		if (!parsedLine.isEmpty()) {
 			if (parsedLine.label != "") if (!isLabel(parsedLine.label)) {
 				logError(i, "ラベル欄が不正です - " + parsedLine.label);
@@ -733,11 +731,9 @@ function logError(lineNumber, message) {
 }
 function installAsmErrorHandlers() {
 	var ar = top.conframe.document.getElementsByTagName("a");
-	if (ar) {
-		for (var i = 0; i < ar.length; i++) {
-			var elem = ar[i];
-			if (elem.className == "asm_error") addEvent(elem, "click", onClickedError);
-		}
+	if (ar) for (var i = 0; i < ar.length; i++) {
+		var elem = ar[i];
+		if (elem.className == "asm_error") addEvent(elem, "click", onClickedError);
 	}
 }
 function onClickedError(e) {
@@ -763,11 +759,9 @@ function onClickedError(e) {
 }
 function installBreakPointHandlers() {
 	var ar = top.progframe.document.getElementsByTagName("a");
-	if (ar) {
-		for (var i = 0; i < ar.length; i++) {
-			var elem = ar[i];
-			if (elem.className == "addr") addEvent(elem, "click", onClickedBreakPoint);
-		}
+	if (ar) for (var i = 0; i < ar.length; i++) {
+		var elem = ar[i];
+		if (elem.className == "addr") addEvent(elem, "click", onClickedBreakPoint);
 	}
 }
 function onClickedBreakPoint(e) {
