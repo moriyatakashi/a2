@@ -67,9 +67,7 @@ var macroFlag = new Bits64K();
 function AITableItem(code, fnc) {
 	this.code = code;
 	this.fnc = fnc;
-	this.callFnc = function(parsedLine) {
-		this.fnc(this.code, parsedLine);
-	}
+	this.callFnc = function(parsedLine) { this.fnc(this.code, parsedLine); }
 }
 var aITable = {
 	"NOP"   : new AITableItem(0x00, alNone),
@@ -205,23 +203,19 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 		var parsedLine = parseLine(arrayLines[i]);
 		endColTable[i] = parsedLine.endcol;
 		if (parsedLine.inst == "IN") {
-			if (!defined(window.opera) && defined(document.all) && defined(window.XMLHttpRequest)) {
-				if (!scriptAllowed) {
-					var str = prompt("IN命令が実行可能な環境になっているかの確認です。\r\nお手数ですが [OK] を押してください。入力欄は空でかまいません。","");
-					if (str != null) scriptAllowed = true;
-					else {
-						alert("情報バーに「スクリプト化されたウィンドウ」云々が出ていたら、お手数ですが、許可してから、[アセンブル] ボタンを押しなおしてください。IN命令の動作にはこの許可が必要です。");
-						return -1;
-					}
+			if (!defined(window.opera) && defined(document.all) && defined(window.XMLHttpRequest)) if (!scriptAllowed) {
+				var str = prompt("IN命令が実行可能な環境になっているかの確認です。\r\nお手数ですが [OK] を押してください。入力欄は空でかまいません。","");
+				if (str != null) scriptAllowed = true;
+				else {
+					alert("情報バーに「スクリプト化されたウィンドウ」云々が出ていたら、お手数ですが、許可してから、[アセンブル] ボタンを押しなおしてください。IN命令の動作にはこの許可が必要です。");
+					return -1;
 				}
 			} else scriptAllowed = true;
 		}
 		if (!parsedLine.isEmpty()) {
-			if (parsedLine.label != "") {
-				if (!isLabel(parsedLine.label)) {
-					logError(i, "ラベル欄が不正です - " + parsedLine.label);
-					parsedLine.label = "";
-				}
+			if (parsedLine.label != "") if (!isLabel(parsedLine.label)) {
+				logError(i, "ラベル欄が不正です - " + parsedLine.label);
+				parsedLine.label = "";
 			}
 			assembleOneLine(parsedLine);
 		}
@@ -238,11 +232,7 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 		resolveGlobalReferences(entryPointName);
 	}
 	var nErrors = errorMessages.length;
-	errorMessages.sort(
-		function(item1, item2) {
-			return item1.lineNumber - item2.lineNumber;
-		}
-	);	
+	errorMessages.sort( function(item1, item2) { return item1.lineNumber - item2.lineNumber; });	
 	var arErrors = new Array();
 	for (var i = 0; i < errorMessages.length; i++) {
 		var item = errorMessages[i];
