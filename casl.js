@@ -1,9 +1,6 @@
 function hex4(val) {
 	str = "";
-	for (var i = 0; i < 4; i++) {
-		str +=
-		"0123456789ABCDEF".charAt((val >>> (12 - i * 4)) & 0xF);
-	}
+	for (var i = 0; i < 4; i++) str += "0123456789ABCDEF".charAt((val >>> (12 - i * 4)) & 0xF);
 	return str;
 }
 function unsignedDec(val) {
@@ -47,8 +44,7 @@ function Bits64K() {
 			this.count++;
 		}
 	}
-	this.clear = function(addr)
-	{
+	this.clear = function(addr){
 		var offset = addr >>> 5;
 		var mask = 1 << (addr % 32);
 		if (this.ar[offset] & mask) {
@@ -197,8 +193,7 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 	startLine = -1;
 	errorShown = -1;
 	objectcode = new Array(65536);
-	for (var i = 0; i < objectcode; i++)
-		objectcode[i] = 0;
+	for (var i = 0; i < objectcode; i++) objectcode[i] = 0;
 	entryPoint = -1;
 	locationCounter = initialLocation;
 	var endColTable = new Array(arrayLines.length);
@@ -213,16 +208,13 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 			if (!defined(window.opera) && defined(document.all) && defined(window.XMLHttpRequest)) {
 				if (!scriptAllowed) {
 					var str = prompt("IN命令が実行可能な環境になっているかの確認です。\r\nお手数ですが [OK] を押してください。入力欄は空でかまいません。","");
-					if (str != null) {
-						scriptAllowed = true;
-					} else {
+					if (str != null) scriptAllowed = true;
+					else {
 						alert("情報バーに「スクリプト化されたウィンドウ」云々が出ていたら、お手数ですが、許可してから、[アセンブル] ボタンを押しなおしてください。IN命令の動作にはこの許可が必要です。");
 						return -1;
 					}
 				}
-			} else {
-				scriptAllowed = true;
-			}
+			} else scriptAllowed = true;
 		}
 		if (!parsedLine.isEmpty()) {
 			if (parsedLine.label != "") {
@@ -246,7 +238,11 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 		resolveGlobalReferences(entryPointName);
 	}
 	var nErrors = errorMessages.length;
-	errorMessages.sort(function(item1, item2) {return item1.lineNumber - item2.lineNumber;});	
+	errorMessages.sort(
+		function(item1, item2) {
+			return item1.lineNumber - item2.lineNumber;
+		}
+	);	
 	{
 		var arErrors = new Array();
 		for (var i = 0; i < errorMessages.length; i++) {
@@ -274,19 +270,14 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 			                       'overflow: hidden; ' +
 			                       '">');  
 			var lineAddr = addressTable[i];
-			if (lineAddr >= 0 && !nonExecutableTable[i]) {
-				arOut.push('<span id="line_addr_' + hex4(lineAddr) + '">');
-			}
+			if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('<span id="line_addr_' + hex4(lineAddr) + '">');
 			if (lineAddr >= 0 && !nonExecutableTable[i]) {
 				arOut.push('<a href="#" class="addr" id="addr_addr_' + hex4(lineAddr) + '">');
 				arOut.push('<span style="color: #804000; " class="addr_mark" id="addr_mark_' + hex4(lineAddr) + '">　</span>');　
 				arOut.push(hex4(lineAddr));
 				arOut.push('</a>');
-			} else if (lineAddr >= 0) {
-				arOut.push("　" + hex4(lineAddr));
-			} else {
-				arOut.push("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-			}
+			} else if (lineAddr >= 0) arOut.push("　" + hex4(lineAddr));
+			else arOut.push("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
 			arOut.push("&nbsp;");
 			{
 				var str = arrayLines[i];
@@ -297,9 +288,7 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 					arOut.push('<span style="color:#008000">');
 					arOut.push(enCER(str.substring(n)));
 					arOut.push('</span>');
-				} else {
-					arOut.push(enCER(arrayLines[i]));
-				}
+				} else arOut.push(enCER(arrayLines[i]));
 			}
 			if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('</span>');
 			arOut.push("</div>");
@@ -612,8 +601,7 @@ function Token() {
 	}
 }
 function isLabel(str) {
-	if (str.match(/^[A-Z][A-Z0-9]{0,7}$/))
-		if (getGR(str) < 0) return true;
+	if (str.match(/^[A-Z][A-Z0-9]{0,7}$/)) if (getGR(str) < 0) return true;
 	return false;
 }
 function parseLine(str) {
@@ -764,9 +752,7 @@ function installAsmErrorHandlers() {
 	if (ar) {
 		for (var i = 0; i < ar.length; i++) {
 			var elem = ar[i];
-			if (elem.className == "asm_error") {
-				addEvent(elem, "click", onClickedError);
-			}
+			if (elem.className == "asm_error") addEvent(elem, "click", onClickedError);
 		}
 	}
 }
@@ -796,9 +782,7 @@ function installBreakPointHandlers() {
 	if (ar) {
 		for (var i = 0; i < ar.length; i++) {
 			var elem = ar[i];
-			if (elem.className == "addr") {
-				addEvent(elem, "click", onClickedBreakPoint);
-			}
+			if (elem.className == "addr") addEvent(elem, "click", onClickedBreakPoint);
 		}
 	}
 }
@@ -825,9 +809,7 @@ function clearAllBreakPoints() {
 	if (ar) {
 		for (var i = 0; i < ar.length; i++) {
 			var elem = ar[i];
-			if (elem.className == "addr_mark") {
-				elem.innerHTML = "　";
-			}
+			if (elem.className == "addr_mark") elem.innerHTML = "　";
 		}
 	}
 	breakPointData.initialize();
@@ -977,9 +959,7 @@ function markPR() {
 		var elem = top.progframe.document.getElementById("line_addr_" + hex4(markedAddress));
 		if (elem) {
 			var nodeParent = elem.parentNode;
-			if (nodeParent.id.substring(0, 5) == "line_") {
-				nodeParent.style.backgroundColor = "#FFFFFF";
-			}
+			if (nodeParent.id.substring(0, 5) == "line_") nodeParent.style.backgroundColor = "#FFFFFF";
 		}
 	}		
 	markedAddress = -1;
@@ -997,9 +977,7 @@ function scrollProgToShowLine(lineNumber) {
 	var linesInWindow = getClientHeight(top.progframe) / lineHeight;
 	var lineTop = getScrollPosY(top.progframe) / lineHeight;
 	if (lineNumber >= lineTop && lineNumber < lineTop + linesInWindow - 1) { }
-	else {
-		top.progframe.scrollTo(0, lineNumber * lineHeight);
-	}
+	else top.progframe.scrollTo(0, lineNumber * lineHeight);
 }
 function ConsoleView() {
 	this.arrayLines = new Array();
@@ -1025,9 +1003,7 @@ function ConsoleView() {
 	}
 	this.outputLine = function(start, lenaddr) {
 		var len = mem[lenaddr];
-		for (var i = 0; i < len; i += 80) {
-			this.outputOneLine(zxt(start + i), Math.min(len - i, 80));
-		}
+		for (var i = 0; i < len; i += 80) this.outputOneLine(zxt(start + i), Math.min(len - i, 80));
 	}
 	this.inputLine = function(start, lenaddr) {
 		var str = prompt("IN命令の入力内容 （キャンセルでEOF）", "");
@@ -1040,9 +1016,7 @@ function ConsoleView() {
 			}
 			mem[lenaddr] = len;
 			this.outputLine(start, lenaddr);
-		} else {
-			mem[lenaddr] = 0xFFFF;
-		}
+		} else mem[lenaddr] = 0xFFFF;
 	}
 	this.update();
 }
@@ -1083,9 +1057,7 @@ function stepOver() {
 }
 function go() {
 	if (stateCurrent == STATE_NONE) return;
-	if (stateCurrent == STATE_UNSTARTED) {
-		initializeRegMem();
-	}
+	if (stateCurrent == STATE_UNSTARTED) initializeRegMem();
 	breakOnRet = false;
 	inputRegMem();
 	setState(STATE_RUNNING);
@@ -1168,9 +1140,7 @@ function InstTableItem(fnc, fncop2) {
 var instTable;
 {
 	instTable = new Array(256);
-	for (var i = 0; i < 256; i++) {
-		instTable[i] = new InstTableItem(instInvalid, null);
-	}
+	for (var i = 0; i < 256; i++) instTable[i] = new InstTableItem(instInvalid, null);
 	instTable[0x00] = new InstTableItem(instNOP, null);
 	instTable[0x10] = new InstTableItem(instLD, op2m);
 	instTable[0x11] = new InstTableItem(instST, null);
@@ -1215,9 +1185,8 @@ function executeOneInstruction() {
 	var inst = new INST(w);
 	var item = instTable[inst.code];
 	item.fnc(inst);
-	if (inst.newPR == spInit) {
-		setState(STATE_UNSTARTED);
-	} else if (inst.newPR >= 0) pr = inst.newPR;
+	if (inst.newPR == spInit) setState(STATE_UNSTARTED);
+	else if (inst.newPR >= 0) pr = inst.newPR;
 	else if (inst.length2) pr = zxt(pr + 2);
 	else pr = zxt(pr + 1);
 }
@@ -1360,11 +1329,7 @@ function instRET(inst) {
 }
 function instSVC(inst) {
 	var ea = inst.getEA();
-	if (ea == 1) {
-		consoleView.inputLine(zxt(gr[1]), zxt(gr[2]));
-	} else if (ea == 2) {
-		consoleView.outputLine(zxt(gr[1]), zxt(gr[2]));
-	} else {
-		setState(STATE_BREAK);
-	}
+	if (ea == 1) consoleView.inputLine(zxt(gr[1]), zxt(gr[2]));
+	else if (ea == 2) consoleView.outputLine(zxt(gr[1]), zxt(gr[2]));
+	else setState(STATE_BREAK);
 }
