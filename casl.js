@@ -69,8 +69,8 @@ function Bits64K() {
 var breakPointData = new Bits64K();
 var macroFlag = new Bits64K();
 function AITableItem(code, fnc) {
-	this.code = code;		// 命令コード
-	this.fnc = fnc;		// アセンブル処理関数
+	this.code = code;
+	this.fnc = fnc;
 	this.callFnc = function(parsedLine) {
 		this.fnc(this.code, parsedLine);
 	}
@@ -114,17 +114,17 @@ var aITable = {
 	"RPOP"  : new AITableItem(-1, alRPop)	
 };
 function LabelTableItem() {
-	this.value = -1;			// 値0～0xFFFF 負はundefined
-	this.defLine = -1;			// 定義している行
-	this.refAddr = new Array();		// 参照しているアドレス
-	this.refLine = new Array();		// 参照している行
+	this.value = -1;
+	this.defLine = -1;
+	this.refAddr = new Array();
+	this.refLine = new Array();
 	this.multiDefined = false;
 }
-var globalLabelTable;		// 全プログラム共通
-var localLabelTable;		// STARTとENDの間
-var startLabel;		// START命令のラベル。START命令に未遭遇ならnull
-var startLocation;		// START命令のデフォルトのロケーション
-var startOperand;		// START命令のオペランドのラベル。
+var globalLabelTable;
+var localLabelTable;
+var startLabel;
+var startLocation;
+var startOperand;
 var startLine;
 function defineLabel(label) {
 	defineLabelSub(localLabelTable, label, locationCounter, lineNumber);
@@ -178,12 +178,12 @@ function ErrorItem(lineNumber, message) {
 var errorMessages;
 var errorShown = -1;
 var scriptAllowed = false;
-var locationCounter;		// アセンブル中のロケーションカウンター
-var lineNumber;			// アセンブル中の行番号
-var addressTable;			// 行ごとに表示するアドレスのテーブル
-var nonExecutableTable;	// 実行可能行か？
-var objectcode;			// オブジェクトコード
-var entryPoint;			// エントリポイントアドレス。最初のスタートまたは指定されたアドレス
+var locationCounter;
+var lineNumber;
+var addressTable;
+var nonExecutableTable;
+var objectcode;
+var entryPoint;
 function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 	globalLabelTable = new Object();
 	errorMessages = new Array();
@@ -834,10 +834,10 @@ function clearAllBreakPoints() {
 	enableElement("button_clear_break", breakPointData.getCount());
 }
 var v = 0;
-var STATE_NONE = v++;        // 未アセンブル状態　アセンブルエラー状態
-var STATE_UNSTARTED = v++;   // 未起動状態
-var STATE_BREAK = v++;       // ブレーク状態
-var STATE_RUNNING = v++;     // 実行状態
+var STATE_NONE = v++;
+var STATE_UNSTARTED = v++;
+var STATE_BREAK = v++;
+var STATE_RUNNING = v++;
 var stateCurrent = STATE_NONE;
 function setState(state) {
 	enableButton("go", state == STATE_UNSTARTED || state == STATE_BREAK);

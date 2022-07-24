@@ -2,56 +2,40 @@
 function addEvent(element, eventType, fn) {
     if (element.addEventListener) {
         element.addEventListener(eventType, fn, false);
-    }
-    else if (element.attachEvent) {
+    } else if (element.attachEvent) {
         var r = element.attachEvent('on' + eventType, fn);
-    }
-    else {
+    } else {
         element['on' + eventType] = fn;
     }
 }
-
-function getEventTarget(e)
-{
+function getEventTarget(e) {
 	if (defined(e.target))
 		return e.target;
 	else if (defined(e.srcElement))
 		return e.srcElement;
 	return null;
 }
-
-function preventDefault(event)
-{
+function preventDefault(event) {
     if (event.preventDefault) {
         event.preventDefault();
     }
     return false;
 }
-
-function defined(v)
-{
-    if (typeof(v) == "undefined")
-        return false;
+function defined(v) {
+    if (typeof(v) == "undefined") return false;
     return true;
 }
-
-function getParam(search, name)
-{
+function getParam(search, name) {
 	var param = search.substring(1);
 	var params = param.split("&");
-	for (var i = 0; i < params.length; i++)
-	{
-		if (params[i].substr(0, name.length) == name &&
-			params[i].charAt(name.length) == '=')
-		{
+	for (var i = 0; i < params.length; i++) {
+		if (params[i].substr(0, name.length) == name && params[i].charAt(name.length) == '=') {
 			return params[i].substr(name.length+1);
 		}
 	}
 	return null;
 }
-
-function enCER(str)
-{
+function enCER(str) {
 	var cerTable = 
 	{
 				" " : "&nbsp;",
@@ -60,14 +44,11 @@ function enCER(str)
 				"\"" : "&quot;",
 				"&" : "&amp;"
 	};
-	
 	return str.replace(/([ <>\"&])/g, 
-		function(whole, char)
-		{
+		function(whole, char) {
 			return cerTable[char];
 		});
 }
-
 var zenTable = new Array(
 1024,0,0,0,0,5439872,8388608,8388608,0,0,0,0,0,0,536863984,7208964,0,0,0,0,0,0,0,0,0,0,0,-2083586048,-120817,-130049,558075,0,
 -65534,-1,196607,0,128,0,0,0,-1047276,131071,25165824,1,129792,0,65280,-2033664,935348214,-127926271,-2147483648,0,1610612736,1024,1610612736,134217728,1589248,16384,6144,-16384,-536805376,-262144,-1,-1,
@@ -134,77 +115,50 @@ var zenTable = new Array(
 -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,536870905,-1602224128,36,0,0,-262144,524287,268434432,
 -1,-1,1073741823,-8,-1,-1,-1,-1,-1,1073741823,-1,-1,-1,-1,-1,-1,-1,-16,-1,-1,0,1711276032,0,1610612736,-1,-1,-1,1,0,-1,-1,2147451135
 );
-
-function isZenkaku(charcode)
-{
-	if (zenTable[charcode >>> 5] & (1 << (charcode & 0x1f)))
-		return true;
+function isZenkaku(charcode) {
+	if (zenTable[charcode >>> 5] & (1 << (charcode & 0x1f))) return true;
 	return false;
 }
-
-function formatSourceLine(strLine, tabWidth)
-{
+function formatSourceLine(strLine, tabWidth) {
 	var col = 0;
 	var ar = new Array();
-	for (var i = 0; i < strLine.length; i++)
-	{
+	for (var i = 0; i < strLine.length; i++) {
 		var ch = strLine.charAt(i);
 		var charcode = strLine.charCodeAt(i);
-		if (charcode == 9)
-		{
+		if (charcode == 9) {
 			do {
 				ar.push(' ');
 				col++;
 			} while (col % tabWidth != 0);
-		}
-		else
-		{
-			if (isZenkaku(charcode))
-			{
+		} else {
+			if (isZenkaku(charcode)) {
 				ar.push(ch);
 				col += 2;
-			}
-			else
-			{
+			} else {
 				ar.push(ch);
 				col++;
 			}
 		}
-		
 	}
 	return ar.join("");
 }
-
-function getClientHeight(w)
-{
-	if (defined(window.opera))
-	{
+function getClientHeight(w) {
+	if (defined(window.opera)) {
         return w.document.body.clientHeight;
 	}
-    if (defined(w.document.documentElement) && defined(w.document.documentElement.clientHeight))
-    {
+    if (defined(w.document.documentElement) && defined(w.document.documentElement.clientHeight)) {
         return w.document.documentElement.clientHeight;
     }
-    else if (defined(w.document.body) && defined(w.document.body.clientHeight))
-    {
+    else if (defined(w.document.body) && defined(w.document.body.clientHeight)) {
         return w.document.body.clientHeight;
     }
-    else if (defined(w.innerHeight))
-    {
+    else if (defined(w.innerHeight)) {
         return w.innerHeight;
-    }
-    else 
-        return 200;
+    } else return 200;
 }
-
-function getScrollPosY(w)
-{
-	if (defined(w.pageYOffset))
-		return w.pageYOffset;
-	else if (defined(w.document.documentElement) && defined(w.document.documentElement.scrollTop))
-		return w.document.documentElement.scrollTop;
-	else if (defined(w.document.body) && defined(w.document.body.scrollTop))
-		return w.document.body.scrollTop;
-	else 
-		return -1;
+function getScrollPosY(w) {
+	if (defined(w.pageYOffset)) return w.pageYOffset;
+	else if (defined(w.document.documentElement) && defined(w.document.documentElement.scrollTop)) return w.document.documentElement.scrollTop;
+	else if (defined(w.document.body) && defined(w.document.body.scrollTop)) return w.document.body.scrollTop;
+	else return -1;
 }
