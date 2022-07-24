@@ -1,10 +1,7 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
+<html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta http-equiv="Content-Language" content="ja" />
-<title>無題 1</title>
 <style type="text/css">
 .wordvalue {
 	width: 35pt;
@@ -37,25 +34,17 @@ form {
 	margin-bottom: 10pt;
 }
 </style>
-<script type="text/javascript" src="script.js">
-</script>
-<script type="text/javascript" src="casl.js">
-</script>
+<script type="text/javascript" src="script.js"> </script>
+<script type="text/javascript" src="casl.js"> </script>
 <script type="text/javascript">
-if (!defined(top.ctrlframe))
-	location.pathname = "index.html";
-
+if (!defined(top.ctrlframe)) location.pathname = "index.html";
 var lineHeight = 15;
 var spInit = 0xFFFF;
-
-function onLoad()
-{
+function onLoad() {
 	setState(STATE_NONE);
-	// ソース初期値の指定があれば動的スクリプト埋め込み
 	{
 		var prog = getParam(top.window.location.search, "onload");
-		if (prog)
-		{
+		if (prog) {
 			var elem = document.createElement("script");
 			elem.type = "text/javascript";
 			elem.src = decodeURI(prog);
@@ -63,44 +52,28 @@ function onLoad()
 		}
 	}		
 }
-
-function onAssemble()
-{
+function onAssemble() {
 	setState(STATE_NONE);
 	var ta = document.getElementById("textarea_source");
 	var arLines = ta.value.split("\n");
-	
 	var tab = (document.getElementById("check_tab8").checked) ? 8 : 4;
 	lineHeight = document.getElementById("input_lineheight").value - 0 + 1;
 	var mainName = document.getElementById("input_main_name").value;
 	var locationInit = fromHex(document.getElementById("input_location_init").value);
 	spInit = fromHex(document.getElementById("input_spinit").value);
-	
 	var nErrors = assemble(arLines, locationInit, tab, mainName);
-	
-	if (nErrors < 0)
-		return;
-	else if (nErrors > 0)
-	{
+	if (nErrors < 0) return;
+	else if (nErrors > 0) {
 		alert("アセンブルでエラーが発生しました");
 		return;
 	}
-	
 	setState(STATE_BREAK);
 	initializeRegMem();
 }
-
-function writeMailAddress(domain, name)
-{
-	document.write('<a href="mailto:' + name + '@' + domain + '">' + name + '@' + domain + '</a>');
-}
-
 </script>
 </head>
-
 <body style="font-family: 'ＭＳ Ｐゴシック', Arial, sans-serif; font-size: 10pt" onload="onLoad(); " id="body1">
 	<h1>CASLシミュレータ （CASL II 対応）</h1>
-
 <form method="post" action="">
 	<label id="Label1">ソース</label><br />
 	<textarea name="TextArea1" cols="45" rows="10" wrap="off" style="font-family: 'ＭＳ ゴシック', 'Courier New', monospace; font-size: 10pt;" id="textarea_source"></textarea><br />
@@ -241,5 +214,4 @@ function writeMailAddress(domain, name)
 </form>
 <hr style="color: #808080; height: 1px" noshade="noshade" />
 </body>
-
 </html>
