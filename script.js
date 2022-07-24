@@ -1,24 +1,15 @@
-
 function addEvent(element, eventType, fn) {
-    if (element.addEventListener) {
-        element.addEventListener(eventType, fn, false);
-    } else if (element.attachEvent) {
-        var r = element.attachEvent('on' + eventType, fn);
-    } else {
-        element['on' + eventType] = fn;
-    }
+    if (element.addEventListener) element.addEventListener(eventType, fn, false);
+    else if (element.attachEvent) var r = element.attachEvent('on' + eventType, fn);
+    else element['on' + eventType] = fn;
 }
 function getEventTarget(e) {
-	if (defined(e.target))
-		return e.target;
-	else if (defined(e.srcElement))
-		return e.srcElement;
+	if (defined(e.target)) return e.target;
+	else if (defined(e.srcElement)) return e.srcElement;
 	return null;
 }
 function preventDefault(event) {
-    if (event.preventDefault) {
-        event.preventDefault();
-    }
+    if (event.preventDefault) event.preventDefault();
     return false;
 }
 function defined(v) {
@@ -28,26 +19,12 @@ function defined(v) {
 function getParam(search, name) {
 	var param = search.substring(1);
 	var params = param.split("&");
-	for (var i = 0; i < params.length; i++) {
-		if (params[i].substr(0, name.length) == name && params[i].charAt(name.length) == '=') {
-			return params[i].substr(name.length+1);
-		}
-	}
+	for (var i = 0; i < params.length; i++) if (params[i].substr(0, name.length) == name && params[i].charAt(name.length) == '=') return params[i].substr(name.length+1);
 	return null;
 }
 function enCER(str) {
-	var cerTable = 
-	{
-				" " : "&nbsp;",
-				"<" : "&lt;",
-				">" : "&gt;",
-				"\"" : "&quot;",
-				"&" : "&amp;"
-	};
-	return str.replace(/([ <>\"&])/g, 
-		function(whole, char) {
-			return cerTable[char];
-		});
+	var cerTable = { " " : "&nbsp;", "<" : "&lt;", ">" : "&gt;", "\"" : "&quot;", "&" : "&amp;" };
+	return str.replace(/([ <>\"&])/g, function(whole, char) { return cerTable[char]; });
 }
 var zenTable = new Array(
 1024,0,0,0,0,5439872,8388608,8388608,0,0,0,0,0,0,536863984,7208964,0,0,0,0,0,0,0,0,0,0,0,-2083586048,-120817,-130049,558075,0,
@@ -125,36 +102,26 @@ function formatSourceLine(strLine, tabWidth) {
 	for (var i = 0; i < strLine.length; i++) {
 		var ch = strLine.charAt(i);
 		var charcode = strLine.charCodeAt(i);
-		if (charcode == 9) {
-			do {
-				ar.push(' ');
-				col++;
-			} while (col % tabWidth != 0);
+		if (charcode == 9) do {
+			ar.push(' ');
+			col++;
+		} while (col % tabWidth != 0);
+		else if (isZenkaku(charcode)) {
+			ar.push(ch);
+			col += 2;
 		} else {
-			if (isZenkaku(charcode)) {
-				ar.push(ch);
-				col += 2;
-			} else {
-				ar.push(ch);
-				col++;
-			}
+			ar.push(ch);
+			col++;
 		}
 	}
 	return ar.join("");
 }
 function getClientHeight(w) {
-	if (defined(window.opera)) {
-        return w.document.body.clientHeight;
-	}
-    if (defined(w.document.documentElement) && defined(w.document.documentElement.clientHeight)) {
-        return w.document.documentElement.clientHeight;
-    }
-    else if (defined(w.document.body) && defined(w.document.body.clientHeight)) {
-        return w.document.body.clientHeight;
-    }
-    else if (defined(w.innerHeight)) {
-        return w.innerHeight;
-    } else return 200;
+	if (defined(window.opera)) return w.document.body.clientHeight;
+    if (defined(w.document.documentElement) && defined(w.document.documentElement.clientHeight)) return w.document.documentElement.clientHeight;
+    else if (defined(w.document.body) && defined(w.document.body.clientHeight)) return w.document.body.clientHeight;
+    else if (defined(w.innerHeight)) return w.innerHeight;
+    else return 200;
 }
 function getScrollPosY(w) {
 	if (defined(w.pageYOffset)) return w.pageYOffset;
