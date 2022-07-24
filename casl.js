@@ -243,59 +243,53 @@ function assemble(arrayLines, initialLocation, tabWidth, entryPointName) {
 			return item1.lineNumber - item2.lineNumber;
 		}
 	);	
-	{
-		var arErrors = new Array();
-		for (var i = 0; i < errorMessages.length; i++) {
-			var item = errorMessages[i];
-			arErrors.push('<a href="#" class="asm_error">');
-			arErrors.push((1 + item.lineNumber) + '行目');
-			arErrors.push('</a>');
-			arErrors.push(enCER(" " + item.message));
-			arErrors.push('<br />');
-		}
-		top.conframe.document.getElementById("errorlog").innerHTML = arErrors.join("");
-		installAsmErrorHandlers();
+	var arErrors = new Array();
+	for (var i = 0; i < errorMessages.length; i++) {
+		var item = errorMessages[i];
+		arErrors.push('<a href="#" class="asm_error">');
+		arErrors.push((1 + item.lineNumber) + '行目');
+		arErrors.push('</a>');
+		arErrors.push(enCER(" " + item.message));
+		arErrors.push('<br />');
 	}
-	{
-		var arOut = new Array();	
-		for (var i = 0; i < arrayLines.length; i++) {
-			arOut.push('<div ' +
-			                'id="line_' + i + '" ' +
-			                'style="position:absolute; ' + 
-			                       'top:' + (i * lineHeight) + 'px; ' + 
-			                       'left:0px; ' + 
-			                       'width:' + (lineHeight * 100) + 'px; ' +
-			                       'height:' + lineHeight + 'px; ' +
-			                       'font-size: ' + (lineHeight - 1) + 'px;' +
-			                       'overflow: hidden; ' +
-			                       '">');  
-			var lineAddr = addressTable[i];
-			if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('<span id="line_addr_' + hex4(lineAddr) + '">');
-			if (lineAddr >= 0 && !nonExecutableTable[i]) {
-				arOut.push('<a href="#" class="addr" id="addr_addr_' + hex4(lineAddr) + '">');
-				arOut.push('<span style="color: #804000; " class="addr_mark" id="addr_mark_' + hex4(lineAddr) + '">　</span>');　
-				arOut.push(hex4(lineAddr));
-				arOut.push('</a>');
-			} else if (lineAddr >= 0) arOut.push("　" + hex4(lineAddr));
-			else arOut.push("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-			arOut.push("&nbsp;");
-			{
-				var str = arrayLines[i];
-				var len = str.length;
-				var n = endColTable[i];
-				if (n >= 0 && n < len) {
-					arOut.push(enCER(str.substring(0, n)));
-					arOut.push('<span style="color:#008000">');
-					arOut.push(enCER(str.substring(n)));
-					arOut.push('</span>');
-				} else arOut.push(enCER(arrayLines[i]));
-			}
-			if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('</span>');
-			arOut.push("</div>");
-		}
-		top.progframe.document.getElementById("progblock").innerHTML = arOut.join("");
-		installBreakPointHandlers();
+	top.conframe.document.getElementById("errorlog").innerHTML = arErrors.join("");
+	installAsmErrorHandlers();
+	var arOut = new Array();	
+	for (var i = 0; i < arrayLines.length; i++) {
+		arOut.push('<div ' +
+		                'id="line_' + i + '" ' +
+		                'style="position:absolute; ' + 
+		                       'top:' + (i * lineHeight) + 'px; ' + 
+		                       'left:0px; ' + 
+		                       'width:' + (lineHeight * 100) + 'px; ' +
+		                       'height:' + lineHeight + 'px; ' +
+		                       'font-size: ' + (lineHeight - 1) + 'px;' +
+		                       'overflow: hidden; ' +
+		                       '">');  
+		var lineAddr = addressTable[i];
+		if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('<span id="line_addr_' + hex4(lineAddr) + '">');
+		if (lineAddr >= 0 && !nonExecutableTable[i]) {
+			arOut.push('<a href="#" class="addr" id="addr_addr_' + hex4(lineAddr) + '">');
+			arOut.push('<span style="color: #804000; " class="addr_mark" id="addr_mark_' + hex4(lineAddr) + '">　</span>');　
+			arOut.push(hex4(lineAddr));
+			arOut.push('</a>');
+		} else if (lineAddr >= 0) arOut.push("　" + hex4(lineAddr));
+		else arOut.push("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+		arOut.push("&nbsp;");
+		var str = arrayLines[i];
+		var len = str.length;
+		var n = endColTable[i];
+		if (n >= 0 && n < len) {
+			arOut.push(enCER(str.substring(0, n)));
+			arOut.push('<span style="color:#008000">');
+			arOut.push(enCER(str.substring(n)));
+			arOut.push('</span>');
+		} else arOut.push(enCER(arrayLines[i]));
+		if (lineAddr >= 0 && !nonExecutableTable[i]) arOut.push('</span>');
+		arOut.push("</div>");
 	}
+	top.progframe.document.getElementById("progblock").innerHTML = arOut.join("");
+	installBreakPointHandlers();
 	if (entryPoint < 0) {
 		alert("ソースプログラムがありません。");
 		return -1;
@@ -806,11 +800,9 @@ function onClickedBreakPoint(e) {
 }
 function clearAllBreakPoints() {
 	var ar = top.progframe.document.getElementsByTagName("span");
-	if (ar) {
-		for (var i = 0; i < ar.length; i++) {
-			var elem = ar[i];
-			if (elem.className == "addr_mark") elem.innerHTML = "　";
-		}
+	if (ar) for (var i = 0; i < ar.length; i++) {
+		var elem = ar[i];
+		if (elem.className == "addr_mark") elem.innerHTML = "　";
 	}
 	breakPointData.initialize();
 	enableElement("button_clear_break", breakPointData.getCount());
@@ -1138,48 +1130,46 @@ function InstTableItem(fnc, fncop2) {
 	this.fncop2 = fncop2;
 };
 var instTable;
-{
-	instTable = new Array(256);
-	for (var i = 0; i < 256; i++) instTable[i] = new InstTableItem(instInvalid, null);
-	instTable[0x00] = new InstTableItem(instNOP, null);
-	instTable[0x10] = new InstTableItem(instLD, op2m);
-	instTable[0x11] = new InstTableItem(instST, null);
-	instTable[0x12] = new InstTableItem(instLAD, null);
-	instTable[0x14] = new InstTableItem(instLD, op2r);
-	instTable[0x20] = new InstTableItem(instADDA, op2m);
-	instTable[0x21] = new InstTableItem(instSUBA, op2m);
-	instTable[0x22] = new InstTableItem(instADDL, op2m);
-	instTable[0x23] = new InstTableItem(instSUBL, op2m);
-	instTable[0x24] = new InstTableItem(instADDA, op2r);
-	instTable[0x25] = new InstTableItem(instSUBA, op2r);
-	instTable[0x26] = new InstTableItem(instADDL, op2r);
-	instTable[0x27] = new InstTableItem(instSUBL, op2r);
-	instTable[0x30] = new InstTableItem(instAND, op2m);
-	instTable[0x31] = new InstTableItem(instOR, op2m);
-	instTable[0x32] = new InstTableItem(instXOR, op2m);
-	instTable[0x34] = new InstTableItem(instAND, op2r);
-	instTable[0x35] = new InstTableItem(instOR, op2r);
-	instTable[0x36] = new InstTableItem(instXOR, op2r);
-	instTable[0x40] = new InstTableItem(instCPA, op2m);
-	instTable[0x41] = new InstTableItem(instCPL, op2m);
-	instTable[0x44] = new InstTableItem(instCPA, op2r);
-	instTable[0x45] = new InstTableItem(instCPL, op2r);
-	instTable[0x50] = new InstTableItem(instSLA, null);
-	instTable[0x51] = new InstTableItem(instSRA, null);
-	instTable[0x52] = new InstTableItem(instSLL, null);
-	instTable[0x53] = new InstTableItem(instSRL, null);
-	instTable[0x61] = new InstTableItem(instJMI, null);
-	instTable[0x62] = new InstTableItem(instJNZ, null);
-	instTable[0x63] = new InstTableItem(instJZE, null);
-	instTable[0x64] = new InstTableItem(instJUMP, null);
-	instTable[0x65] = new InstTableItem(instJPL, null);
-	instTable[0x66] = new InstTableItem(instJOV, null);
-	instTable[0x70] = new InstTableItem(instPUSH, null);
-	instTable[0x71] = new InstTableItem(instPOP, null);
-	instTable[0x80] = new InstTableItem(instCALL, null);
-	instTable[0x81] = new InstTableItem(instRET, null);
-	instTable[0xF0] = new InstTableItem(instSVC, null);
-}
+instTable = new Array(256);
+for (var i = 0; i < 256; i++) instTable[i] = new InstTableItem(instInvalid, null);
+instTable[0x00] = new InstTableItem(instNOP, null);
+instTable[0x10] = new InstTableItem(instLD, op2m);
+instTable[0x11] = new InstTableItem(instST, null);
+instTable[0x12] = new InstTableItem(instLAD, null);
+instTable[0x14] = new InstTableItem(instLD, op2r);
+instTable[0x20] = new InstTableItem(instADDA, op2m);
+instTable[0x21] = new InstTableItem(instSUBA, op2m);
+instTable[0x22] = new InstTableItem(instADDL, op2m);
+instTable[0x23] = new InstTableItem(instSUBL, op2m);
+instTable[0x24] = new InstTableItem(instADDA, op2r);
+instTable[0x25] = new InstTableItem(instSUBA, op2r);
+instTable[0x26] = new InstTableItem(instADDL, op2r);
+instTable[0x27] = new InstTableItem(instSUBL, op2r);
+instTable[0x30] = new InstTableItem(instAND, op2m);
+instTable[0x31] = new InstTableItem(instOR, op2m);
+instTable[0x32] = new InstTableItem(instXOR, op2m);
+instTable[0x34] = new InstTableItem(instAND, op2r);
+instTable[0x35] = new InstTableItem(instOR, op2r);
+instTable[0x36] = new InstTableItem(instXOR, op2r);
+instTable[0x40] = new InstTableItem(instCPA, op2m);
+instTable[0x41] = new InstTableItem(instCPL, op2m);
+instTable[0x44] = new InstTableItem(instCPA, op2r);
+instTable[0x45] = new InstTableItem(instCPL, op2r);
+instTable[0x50] = new InstTableItem(instSLA, null);
+instTable[0x51] = new InstTableItem(instSRA, null);
+instTable[0x52] = new InstTableItem(instSLL, null);
+instTable[0x53] = new InstTableItem(instSRL, null);
+instTable[0x61] = new InstTableItem(instJMI, null);
+instTable[0x62] = new InstTableItem(instJNZ, null);
+instTable[0x63] = new InstTableItem(instJZE, null);
+instTable[0x64] = new InstTableItem(instJUMP, null);
+instTable[0x65] = new InstTableItem(instJPL, null);
+instTable[0x66] = new InstTableItem(instJOV, null);
+instTable[0x70] = new InstTableItem(instPUSH, null);
+instTable[0x71] = new InstTableItem(instPOP, null);
+instTable[0x80] = new InstTableItem(instCALL, null);
+instTable[0x81] = new InstTableItem(instRET, null);
+instTable[0xF0] = new InstTableItem(instSVC, null);
 function executeOneInstruction() {
 	var w = mem[pr];
 	var inst = new INST(w);
