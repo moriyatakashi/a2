@@ -42,15 +42,13 @@ var lineHeight = 15;
 var spInit = 0xFFFF;
 function onLoad() {
 	setState(STATE_NONE);
-	{
-		var prog = getParam(top.window.location.search, "onload");
-		if (prog) {
-			var elem = document.createElement("script");
-			elem.type = "text/javascript";
-			elem.src = decodeURI(prog);
-			document.getElementById("body1").appendChild(elem);
-		}
-	}		
+	var prog = getParam(top.window.location.search, "onload");
+	if (prog) {
+		var elem = document.createElement("script");
+		elem.type = "text/javascript";
+		elem.src = decodeURI(prog);
+		document.getElementById("body1").appendChild(elem);
+	}
 }
 function onAssemble() {
 	setState(STATE_NONE);
