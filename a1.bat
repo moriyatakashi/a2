@@ -1,1 +1,1 @@
-docker run -it -p81:8080 -vc:/root:/root --name case2 debian sh /root/a2/a1.sh
+docker run -it -p81:8080 -vc:/root:/root --name a2 debian sh /root/a2/a1.sh
