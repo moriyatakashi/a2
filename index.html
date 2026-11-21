@@ -158,6 +158,24 @@
     #issue-list p { white-space: pre-wrap; overflow-wrap: anywhere; }
     #issue-list label { display: block; margin-bottom: .65rem; }
 
+    #wiki-list { padding-inline-start: 1.25rem; }
+    #wiki-list a, #wiki-body a { color: var(--link); }
+    #wiki-list li { margin-block: .35rem; }
+    #wiki-panel fieldset, #wiki-panel label { display: grid; gap: .4rem; }
+    #wiki-panel fieldset { border: 0; padding: 0; margin: 1rem 0; gap: .75rem; }
+    #wiki-panel :is(button, input, textarea, select) {
+      font: inherit;
+      color: inherit;
+      background: #111;
+      border: 1px solid var(--line);
+      border-radius: .3rem;
+      padding: .4rem .6rem;
+      max-width: 100%;
+    }
+    #wiki-link-tools, .wiki-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; }
+    #wiki-panel :is(article, li) { overflow-wrap: anywhere; }
+    #wiki-body p { margin-block: .65rem; }
+
     h1 {
       margin-block: 2rem;
       font-size: clamp(1.75rem, 5vw, 2.5rem);
@@ -171,6 +189,7 @@
       <a href="https://moriyatakashi.github.io/a1/">路歴（a1）</a>
       <button id="chira-button" type="button" aria-controls="chira-panel" aria-expanded="false" hidden>チラ裏</button>
       <button id="issues-button" type="button" aria-controls="issues-panel" aria-expanded="false" hidden>課題</button>
+      <button id="wiki-button" type="button" aria-controls="wiki-panel" aria-expanded="false" hidden>Wiki</button>
       <div class="auth">
         <span id="auth-state" role="status"></span>
         <button id="auth-button" type="button" disabled>ログイン</button>
@@ -199,8 +218,35 @@
       <p id="issue-status" role="status"></p>
       <ul id="issue-list"></ul>
     </section>
+    <section id="wiki-panel" aria-labelledby="wiki-title" hidden>
+      <h2 id="wiki-title">Wiki</h2>
+      <button id="wiki-new" type="button" disabled>新規ページ</button>
+      <p id="wiki-status" role="status"></p>
+      <ul id="wiki-list"></ul>
+      <article id="wiki-article" hidden>
+        <h3 id="wiki-page-title"></h3>
+        <div id="wiki-body"></div>
+        <button id="wiki-edit" type="button">編集</button>
+      </article>
+      <form id="wiki-form" hidden>
+        <fieldset>
+          <label>タイトル <input name="title" maxlength="120" required></label>
+          <label>本文（Markdown） <textarea name="body" rows="8" maxlength="12000" required></textarea></label>
+          <div id="wiki-link-tools">
+            <label>関連用語 <select name="link"></select></label>
+            <button id="wiki-insert" type="button">リンクを挿入</button>
+          </div>
+          <div class="wiki-actions">
+            <button type="submit">保存</button>
+            <button id="wiki-cancel" type="button">キャンセル</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
   </main>
   <script type="module">
+    import { setupWiki } from "./wiki.js";
+
     const authButton = document.querySelector("#auth-button");
     const authState = document.querySelector("#auth-state");
     const authError = document.querySelector("#auth-error");
@@ -486,11 +532,13 @@
       let authRevision = 0;
       const updateChiraAuth = setupChira(app);
       const updateIssuesAuth = setupIssues(app);
+      const updateWikiAuth = setupWiki(app);
 
       onAuthStateChanged(auth, async (user) => {
         const revision = ++authRevision;
         updateChiraAuth(user);
         updateIssuesAuth(user);
+        updateWikiAuth(user);
         authState.textContent = user ? "ログイン済み" : "";
         authButton.textContent = user ? "ログアウト" : "ログイン";
         authButton.disabled = false;
