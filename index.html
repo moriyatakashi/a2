@@ -85,7 +85,7 @@
       color: #ffb4ab;
     }
 
-    nav button[hidden], #chira-panel[hidden] { display: none; }
+    nav button[hidden], #chira-panel[hidden], #issues-panel[hidden], #issue-form[hidden] { display: none; }
 
     .chira-list {
       margin: 0;
@@ -131,6 +131,33 @@
       white-space: pre-wrap;
     }
 
+    #issue-form, #issue-list { margin-block: 1rem; }
+    #issue-form fieldset {
+      display: grid;
+      gap: .65rem;
+      border: 0;
+      padding: 0;
+      margin: 0;
+    }
+    #issue-form label { display: grid; gap: .25rem; }
+    #issues-panel :is(button, input, textarea, select) {
+      font: inherit;
+      color: inherit;
+      background: #111;
+      border: 1px solid var(--line);
+      border-radius: .3rem;
+      padding: .4rem .6rem;
+    }
+    #issue-list { padding: 0; list-style: none; }
+    #issue-list li { border-bottom: 1px solid var(--line); }
+    #issue-list summary {
+      padding: .55rem 0;
+      cursor: pointer;
+      overflow-wrap: anywhere;
+    }
+    #issue-list p { white-space: pre-wrap; overflow-wrap: anywhere; }
+    #issue-list label { display: block; margin-bottom: .65rem; }
+
     h1 {
       margin-block: 2rem;
       font-size: clamp(1.75rem, 5vw, 2.5rem);
@@ -143,6 +170,7 @@
       <a href="./" aria-current="page">トップ</a>
       <a href="https://moriyatakashi.github.io/a1/">路歴（a1）</a>
       <button id="chira-button" type="button" aria-controls="chira-panel" aria-expanded="false" hidden>チラ裏</button>
+      <button id="issues-button" type="button" aria-controls="issues-panel" aria-expanded="false" hidden>課題</button>
       <div class="auth">
         <span id="auth-state" role="status"></span>
         <button id="auth-button" type="button" disabled>ログイン</button>
@@ -157,6 +185,19 @@
       <h2 id="chira-title">チラ裏</h2>
       <p id="chira-status" role="status"></p>
       <ul id="chira-list" class="chira-list"></ul>
+    </section>
+    <section id="issues-panel" aria-labelledby="issues-title" hidden>
+      <h2 id="issues-title">課題</h2>
+      <button id="issue-new" type="button" aria-controls="issue-form" aria-expanded="false" disabled>新規登録</button>
+      <form id="issue-form" hidden>
+        <fieldset>
+          <label>件名 <input name="title" maxlength="120" required></label>
+          <label>詳細 <textarea name="detail" rows="4" maxlength="4000"></textarea></label>
+          <button type="submit">登録する</button>
+        </fieldset>
+      </form>
+      <p id="issue-status" role="status"></p>
+      <ul id="issue-list"></ul>
     </section>
   </main>
   <script type="module">
@@ -264,6 +305,157 @@
       };
     }
 
+    function setupIssues(app) {
+      const button = document.querySelector("#issues-button");
+      const panel = document.querySelector("#issues-panel");
+      const newButton = document.querySelector("#issue-new");
+      const form = document.querySelector("#issue-form");
+      const fields = form.querySelector("fieldset");
+      const titleInput = form.elements.namedItem("title");
+      const detailInput = form.elements.namedItem("detail");
+      const status = document.querySelector("#issue-status");
+      const list = document.querySelector("#issue-list");
+      const labels = { open: "未対応", review: "確認中", done: "済み" };
+      let revision = 0;
+      let db;
+
+      function setFormVisible(visible) {
+        form.hidden = !visible;
+        newButton.setAttribute("aria-expanded", String(visible));
+      }
+
+      function close() {
+        revision++;
+        panel.hidden = true;
+        button.setAttribute("aria-expanded", "false");
+        newButton.disabled = true;
+        fields.disabled = false;
+        setFormVisible(false);
+        form.reset();
+        status.textContent = "";
+        list.replaceChildren();
+      }
+
+      async function firestore() {
+        const sdk = await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js");
+        db ??= sdk.getFirestore(app);
+        return sdk;
+      }
+
+      function issueRow(id, issue) {
+        const row = document.createElement("li");
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        const body = document.createElement("p");
+        const label = document.createElement("label");
+        const select = document.createElement("select");
+        let saved = issue.status;
+
+        function updateSummary() {
+          summary.textContent = `[${labels[saved]}] ${issue.title}`;
+        }
+
+        updateSummary();
+        body.textContent = issue.detail || "詳細なし";
+        for (const [value, text] of Object.entries(labels)) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = text;
+          select.append(option);
+        }
+        select.value = saved;
+        select.addEventListener("change", async () => {
+          const request = revision;
+          const next = select.value;
+          select.disabled = true;
+          try {
+            const { doc, serverTimestamp, updateDoc } = await firestore();
+            if (request !== revision) return;
+            await updateDoc(doc(db, "a2Issues", id), { status: next, updatedAt: serverTimestamp() });
+            if (request !== revision) return;
+            saved = next;
+            updateSummary();
+            status.textContent = "状態を更新しました。";
+          } catch {
+            if (request === revision) status.textContent = "状態を更新できませんでした。";
+          } finally {
+            select.value = saved;
+            select.disabled = false;
+          }
+        });
+        label.append("状態 ", select);
+        details.append(summary, body, label);
+        row.append(details);
+        return row;
+      }
+
+      button.addEventListener("click", async () => {
+        if (!panel.hidden) {
+          close();
+          return;
+        }
+        const request = ++revision;
+        panel.hidden = false;
+        button.setAttribute("aria-expanded", "true");
+        status.textContent = "課題を読み込み中…";
+        try {
+          const { collection, getDocsFromServer, orderBy, query } = await firestore();
+          if (request !== revision) return;
+          const result = await getDocsFromServer(query(collection(db, "a2Issues"), orderBy("createdAt", "desc")));
+          if (request !== revision) return;
+          list.replaceChildren(...result.docs.map(doc => issueRow(doc.id, doc.data())));
+          newButton.disabled = false;
+          status.textContent = result.empty ? "課題はまだありません。" : "";
+        } catch (error) {
+          if (request !== revision) return;
+          status.textContent = error.code === "permission-denied"
+            ? "課題を読む権限がありません。"
+            : "課題を読み込めませんでした。開き直してお試しください。";
+        }
+      });
+
+      newButton.addEventListener("click", () => {
+        setFormVisible(form.hidden);
+        if (!form.hidden) titleInput.focus();
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        if (!title) {
+          status.textContent = "件名を入力してください。";
+          titleInput.focus();
+          return;
+        }
+        const request = revision;
+        const issue = { title, detail: detailInput.value.trim(), status: "open" };
+        fields.disabled = true;
+        status.textContent = "登録中…";
+        try {
+          const { addDoc, collection, serverTimestamp } = await firestore();
+          if (request !== revision) return;
+          const ref = await addDoc(collection(db, "a2Issues"), {
+            ...issue, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          });
+          if (request !== revision) return;
+          list.prepend(issueRow(ref.id, issue));
+          form.reset();
+          setFormVisible(false);
+          newButton.focus();
+          status.textContent = "課題を登録しました。";
+        } catch {
+          if (request === revision) status.textContent = "課題を登録できませんでした。";
+        } finally {
+          if (request === revision) fields.disabled = false;
+        }
+      });
+
+      return (user) => {
+        close();
+        button.hidden = !user;
+      };
+    }
+
     function showError(error, fallback) {
       const messages = {
         "auth/popup-blocked": "ポップアップを許可してから、もう一度ログインしてください。",
@@ -293,10 +485,12 @@
       const auth = getAuth(app);
       let authRevision = 0;
       const updateChiraAuth = setupChira(app);
+      const updateIssuesAuth = setupIssues(app);
 
       onAuthStateChanged(auth, async (user) => {
         const revision = ++authRevision;
         updateChiraAuth(user);
+        updateIssuesAuth(user);
         authState.textContent = user ? "ログイン済み" : "";
         authButton.textContent = user ? "ログアウト" : "ログイン";
         authButton.disabled = false;
