@@ -38,7 +38,7 @@
       gap: .75rem 1.5rem;
     }
 
-    nav a, .auth button {
+    nav a, nav button {
       display: inline-flex;
       align-items: center;
       min-height: 3rem;
@@ -51,7 +51,7 @@
       font-weight: 700;
     }
 
-    nav a:focus-visible, .auth button:focus-visible {
+    nav a:focus-visible, nav button:focus-visible {
       outline: 2px solid var(--link);
       outline-offset: 3px;
     }
@@ -62,7 +62,7 @@
       gap: .75rem;
     }
 
-    .auth button {
+    nav button {
       padding: 0;
       border: 0;
       background: transparent;
@@ -71,7 +71,7 @@
       cursor: pointer;
     }
 
-    .auth button:disabled {
+    nav button:disabled {
       opacity: .65;
       cursor: default;
     }
@@ -85,6 +85,39 @@
       color: #ffb4ab;
     }
 
+    nav button[hidden], #chira-panel[hidden] { display: none; }
+
+    .chira-list {
+      display: grid;
+      gap: .5rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .chira-list details {
+      border: 1px solid var(--line);
+      border-radius: .5rem;
+      overflow-wrap: anywhere;
+    }
+
+    .chira-list summary {
+      padding: .75rem;
+      cursor: pointer;
+    }
+
+    .chira-list time {
+      font-size: .875rem;
+      color: #c6c9be;
+    }
+
+    .chira-list p {
+      margin: 0;
+      padding: .75rem;
+      border-top: 1px solid var(--line);
+      white-space: pre-wrap;
+    }
+
     h1 {
       margin-block: 2rem;
       font-size: clamp(1.75rem, 5vw, 2.5rem);
@@ -96,6 +129,7 @@
     <nav class="wrap" aria-label="メインメニュー">
       <a href="./" aria-current="page">トップ</a>
       <a href="https://moriyatakashi.github.io/a1/">路歴（a1）</a>
+      <button id="chira-button" type="button" aria-controls="chira-panel" aria-expanded="false" hidden>チラ裏</button>
       <div class="auth">
         <span id="auth-state" role="status"></span>
         <button id="auth-button" type="button" disabled>ログイン</button>
@@ -106,6 +140,11 @@
   <main class="wrap">
     <h1>路歴（a2）</h1>
     <p id="canada-result" role="status"></p>
+    <section id="chira-panel" aria-labelledby="chira-title" hidden>
+      <h2 id="chira-title">チラ裏</h2>
+      <p id="chira-status" role="status"></p>
+      <ul id="chira-list" class="chira-list"></ul>
+    </section>
   </main>
   <script type="module">
     const authButton = document.querySelector("#auth-button");
@@ -119,6 +158,93 @@
       projectId: "ab01-9f35a",
       appId: "1:502154862201:web:4ca0c72225af6bd0147ea8",
     };
+
+    function setupChira(app) {
+      const button = document.querySelector("#chira-button");
+      const panel = document.querySelector("#chira-panel");
+      const list = document.querySelector("#chira-list");
+      const status = document.querySelector("#chira-status");
+      const dateFormat = new Intl.DateTimeFormat("ja-JP", {
+        dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tokyo",
+      });
+      let revision = 0;
+      let expiryTimer;
+
+      function close() {
+        revision++;
+        clearTimeout(expiryTimer);
+        panel.hidden = true;
+        button.setAttribute("aria-expanded", "false");
+        list.replaceChildren();
+        status.textContent = "";
+      }
+
+      function removeExpired() {
+        clearTimeout(expiryTimer);
+        const now = Date.now();
+        let nextExpiry = Infinity;
+        for (const item of list.children) {
+          const expiry = Number(item.dataset.expiry);
+          if (expiry > now) nextExpiry = Math.min(nextExpiry, expiry);
+        }
+        for (const item of [...list.children]) {
+          if (Number(item.dataset.expiry) <= now) item.remove();
+        }
+        status.textContent = list.children.length ? "" : "チラ裏は空です。";
+        if (Number.isFinite(nextExpiry)) {
+          expiryTimer = setTimeout(removeExpired, Math.min(nextExpiry - now, 2147483647));
+        }
+      }
+
+      button.addEventListener("click", async () => {
+        if (!panel.hidden) {
+          close();
+          return;
+        }
+        const request = ++revision;
+        panel.hidden = false;
+        button.setAttribute("aria-expanded", "true");
+        status.textContent = "チラ裏を読み込み中…";
+        try {
+          const { collection, getDocsFromServer, getFirestore, orderBy, query } =
+            await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js");
+          const snapshot = await getDocsFromServer(query(collection(getFirestore(app), "chiraura"), orderBy("at", "desc")));
+          if (request !== revision) return;
+          for (const doc of snapshot.docs) {
+            const { at, by, body, expire_at } = doc.data();
+            const expiry = expire_at?.toMillis?.();
+            const posted = at?.toDate?.() ?? new Date(at);
+            if (!Number.isFinite(expiry) || expiry <= Date.now() || !Number.isFinite(posted.getTime()) || typeof body !== "string") continue;
+            const item = document.createElement("li");
+            item.dataset.expiry = expiry;
+            const details = document.createElement("details");
+            const summary = document.createElement("summary");
+            const time = document.createElement("time");
+            time.dateTime = posted.toISOString();
+            time.textContent = dateFormat.format(posted);
+            const preview = document.createElement("div");
+            preview.textContent = body.split(/\\r?\\n/, 1)[0] || "（先頭行は空）";
+            summary.append(time, ` · ${by || "投稿者不明"}`, preview);
+            const full = document.createElement("p");
+            full.textContent = body;
+            details.append(summary, full);
+            item.append(details);
+            list.append(item);
+          }
+          removeExpired();
+        } catch (error) {
+          if (request !== revision) return;
+          status.textContent = error.code === "permission-denied"
+            ? "チラ裏を読む権限がありません。"
+            : "チラ裏を読み込めませんでした。開き直してお試しください。";
+        }
+      });
+
+      return (user) => {
+        close();
+        button.hidden = !user;
+      };
+    }
 
     function showError(error, fallback) {
       const messages = {
@@ -148,9 +274,11 @@
       const app = initializeApp(firebaseConfig, "a2");
       const auth = getAuth(app);
       let authRevision = 0;
+      const updateChiraAuth = setupChira(app);
 
       onAuthStateChanged(auth, async (user) => {
         const revision = ++authRevision;
+        updateChiraAuth(user);
         authState.textContent = user ? "ログイン済み" : "";
         authButton.textContent = user ? "ログアウト" : "ログイン";
         authButton.disabled = false;
