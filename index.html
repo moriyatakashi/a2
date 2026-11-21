@@ -38,7 +38,7 @@
       gap: .75rem 1.5rem;
     }
 
-    nav a {
+    nav a, .auth button {
       display: inline-flex;
       align-items: center;
       min-height: 3rem;
@@ -51,9 +51,38 @@
       font-weight: 700;
     }
 
-    nav a:focus-visible {
+    nav a:focus-visible, .auth button:focus-visible {
       outline: 2px solid var(--link);
       outline-offset: 3px;
+    }
+
+    .auth {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .auth button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .auth button:disabled {
+      opacity: .65;
+      cursor: default;
+    }
+
+    #auth-state:empty, #auth-error:empty {
+      margin: 0;
+      padding: 0;
+    }
+
+    #auth-error {
+      color: #ffb4ab;
     }
 
     h1 {
@@ -67,10 +96,74 @@
     <nav class="wrap" aria-label="メインメニュー">
       <a href="./" aria-current="page">トップ</a>
       <a href="https://moriyatakashi.github.io/a1/">路歴（a1）</a>
+      <div class="auth">
+        <span id="auth-state" role="status"></span>
+        <button id="auth-button" type="button" disabled>ログイン</button>
+      </div>
     </nav>
+    <p id="auth-error" class="wrap" role="alert"></p>
   </header>
   <main class="wrap">
     <h1>路歴（a2）</h1>
   </main>
+  <script type="module">
+    const authButton = document.querySelector("#auth-button");
+    const authState = document.querySelector("#auth-state");
+    const authError = document.querySelector("#auth-error");
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuPw8nMuFWx8ghV5ZeBGETeiNII3uk4l8",
+      authDomain: "ab01-9f35a.firebaseapp.com",
+      projectId: "ab01-9f35a",
+      appId: "1:502154862201:web:4ca0c72225af6bd0147ea8",
+    };
+
+    function showError(error, fallback) {
+      const messages = {
+        "auth/popup-blocked": "ポップアップを許可してから、もう一度ログインしてください。",
+        "auth/unauthorized-domain": "このサイトは Firebase Authentication の承認済みドメインに登録されていません。",
+        "auth/network-request-failed": "通信できませんでした。接続を確認して、もう一度お試しください。",
+      };
+      authError.textContent = messages[error.code] ?? fallback;
+    }
+
+    async function setupAuth() {
+      const [{ initializeApp }, firebaseAuth] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js"),
+      ]);
+      const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } = firebaseAuth;
+      const auth = getAuth(initializeApp(firebaseConfig, "a2"));
+
+      onAuthStateChanged(auth, (user) => {
+        authState.textContent = user ? "ログイン済み" : "";
+        authButton.textContent = user ? "ログアウト" : "ログイン";
+        authButton.disabled = false;
+      });
+
+      authButton.addEventListener("click", async () => {
+        const signingOut = Boolean(auth.currentUser);
+        authError.textContent = "";
+        authButton.disabled = true;
+        try {
+          if (signingOut) {
+            await signOut(auth);
+          } else {
+            await signInWithPopup(auth, new GoogleAuthProvider());
+          }
+        } catch (error) {
+          if (error.code !== "auth/popup-closed-by-user") {
+            showError(error, signingOut ? "ログアウトできませんでした。" : "Google ログインに失敗しました。");
+          }
+        } finally {
+          authButton.disabled = false;
+        }
+      });
+    }
+
+    setupAuth().catch((error) => {
+      showError(error, "ログイン機能を読み込めませんでした。ページを再読み込みしてください。");
+    });
+  </script>
 </body>
 </html>
