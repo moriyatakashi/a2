@@ -172,7 +172,9 @@
     #issue-list p { white-space: pre-wrap; overflow-wrap: anywhere; }
     #issue-list label { display: block; margin-bottom: .65rem; }
 
-    #wiki-list { padding-inline-start: 1.25rem; }
+    #wiki-list { list-style: none; padding: 0; }
+    #wiki-list summary { cursor: pointer; padding-block: .35rem; }
+    #wiki-back { color: var(--link); }
     #wiki-list a, #wiki-body a { color: var(--link); }
     #wiki-list li { margin-block: .35rem; }
     #wiki-panel fieldset, #wiki-panel label { display: grid; gap: .4rem; }
@@ -239,6 +241,7 @@
       <h2 id="wiki-title">Wiki</h2>
       <button id="wiki-new" type="button" disabled>新規ページ</button>
       <p id="wiki-status" role="status"></p>
+      <a id="wiki-back" href="#wiki" hidden>用語一覧へ</a>
       <ul id="wiki-list"></ul>
       <article id="wiki-article" hidden>
         <h3 id="wiki-page-title"></h3>
@@ -248,6 +251,7 @@
       <form id="wiki-form" hidden>
         <fieldset>
           <label>タイトル <input name="title" maxlength="120" required></label>
+          <label>読み（漢字の用語など） <input name="reading" maxlength="120"></label>
           <label>本文（Markdown） <textarea name="body" rows="8" maxlength="12000" required></textarea></label>
           <div id="wiki-link-tools">
             <label>関連用語 <select name="link"></select></label>
@@ -262,7 +266,7 @@
     </section>
   </main>
   <script type="module">
-    import { setupWiki } from "./wiki.js";
+    import { setupWiki } from "./wiki.js?rev=index-groups";
 
     const authButton = document.querySelector("#auth-button");
     const authMenu = document.querySelector("#auth-menu");
