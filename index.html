@@ -76,7 +76,21 @@
       cursor: default;
     }
 
-    #auth-state:empty, #auth-error:empty {
+    #auth-menu { position: relative; }
+    #auth-menu summary { font-size: .875rem; color: #c6c9be; cursor: pointer; }
+    #auth-menu button {
+      position: absolute;
+      inset-inline-end: 0;
+      z-index: 1;
+      min-height: 2.5rem;
+      padding: .35rem .7rem;
+      background: #111;
+      border: 1px solid var(--line);
+      border-radius: .3rem;
+      white-space: nowrap;
+    }
+
+    #auth-error:empty {
       margin: 0;
       padding: 0;
     }
@@ -186,13 +200,15 @@
   <header>
     <nav class="wrap" aria-label="メインメニュー">
       <a href="./" aria-current="page">トップ</a>
-      <a href="https://moriyatakashi.github.io/a1/">路歴（a1）</a>
       <button id="chira-button" type="button" aria-controls="chira-panel" aria-expanded="false" hidden>チラ裏</button>
       <button id="issues-button" type="button" aria-controls="issues-panel" aria-expanded="false" hidden>課題</button>
       <button id="wiki-button" type="button" aria-controls="wiki-panel" aria-expanded="false" hidden>Wiki</button>
       <div class="auth">
-        <span id="auth-state" role="status"></span>
         <button id="auth-button" type="button" disabled>ログイン</button>
+        <details id="auth-menu" hidden>
+          <summary>ログイン済み</summary>
+          <button id="signout-button" type="button">ログアウト</button>
+        </details>
       </div>
     </nav>
     <p id="auth-error" class="wrap" role="alert"></p>
@@ -207,6 +223,7 @@
     </section>
     <section id="issues-panel" aria-labelledby="issues-title" hidden>
       <h2 id="issues-title">課題</h2>
+      <label><input id="issues-show-done" type="checkbox"> 済みも表示</label>
       <button id="issue-new" type="button" aria-controls="issue-form" aria-expanded="false" disabled>新規登録</button>
       <form id="issue-form" hidden>
         <fieldset>
@@ -248,7 +265,8 @@
     import { setupWiki } from "./wiki.js";
 
     const authButton = document.querySelector("#auth-button");
-    const authState = document.querySelector("#auth-state");
+    const authMenu = document.querySelector("#auth-menu");
+    const signoutButton = document.querySelector("#signout-button");
     const authError = document.querySelector("#auth-error");
     const canadaResult = document.querySelector("#canada-result");
 
@@ -373,6 +391,31 @@
       const labels = { open: "未対応", review: "確認中", done: "済み" };
       let revision = 0;
       let db;
+      let signedIn = false;
+      const showDone = document.querySelector("#issues-show-done");
+      try { showDone.checked = localStorage.getItem("a2-show-done") === "true"; } catch {}
+
+      function route() {
+        if (location.hash === "#issues") return "";
+        return /^#issue-([A-Za-z0-9_-]+)$/.exec(location.hash)?.[1] ?? null;
+      }
+
+      function applyRoute() {
+        const selected = route();
+        for (const row of list.children) {
+          const active = row.dataset.id === selected;
+          row.firstElementChild.open = active;
+          row.hidden = !showDone.checked && row.dataset.status === "done" && !active;
+        }
+      }
+
+      showDone.addEventListener("change", () => {
+        try { localStorage.setItem("a2-show-done", String(showDone.checked)); } catch {}
+        if (!showDone.checked && [...list.children].some(row => row.dataset.id === route() && row.dataset.status === "done")) {
+          location.hash = "issues";
+        }
+        applyRoute();
+      });
 
       function setFormVisible(visible) {
         form.hidden = !visible;
@@ -405,12 +448,18 @@
         const label = document.createElement("label");
         const select = document.createElement("select");
         let saved = issue.status;
+        row.dataset.id = id;
 
         function updateSummary() {
-          summary.textContent = `[${labels[saved]}] ${issue.title}`;
+          row.dataset.status = saved;
+          summary.textContent = `${issue.number ? "#" + issue.number + " " : ""}[${labels[saved]}] ${issue.title}`;
         }
 
         updateSummary();
+        summary.addEventListener("click", (event) => {
+          event.preventDefault();
+          location.hash = details.open ? "issues" : "issue-" + id;
+        });
         body.textContent = issue.detail || "詳細なし";
         for (const [value, text] of Object.entries(labels)) {
           const option = document.createElement("option");
@@ -430,6 +479,8 @@
             if (request !== revision) return;
             saved = next;
             updateSummary();
+            if (next === "done" && !showDone.checked && route() === id) location.hash = "issues";
+            applyRoute();
             status.textContent = "状態を更新しました。";
           } catch {
             if (request === revision) status.textContent = "状態を更新できませんでした。";
@@ -444,9 +495,13 @@
         return row;
       }
 
-      button.addEventListener("click", async () => {
-        if (!panel.hidden) {
+      async function syncIssuesRoute() {
+        if (!signedIn || route() === null) {
           close();
+          return;
+        }
+        if (!panel.hidden) {
+          applyRoute();
           return;
         }
         const request = ++revision;
@@ -460,6 +515,7 @@
           if (request !== revision) return;
           list.replaceChildren(...result.docs.map(doc => issueRow(doc.id, doc.data())));
           newButton.disabled = false;
+          applyRoute();
           status.textContent = result.empty ? "課題はまだありません。" : "";
         } catch (error) {
           if (request !== revision) return;
@@ -467,7 +523,12 @@
             ? "課題を読む権限がありません。"
             : "課題を読み込めませんでした。開き直してお試しください。";
         }
+      }
+
+      button.addEventListener("click", () => {
+        location.hash = route() === null ? "issues" : "";
       });
+      window.addEventListener("hashchange", syncIssuesRoute);
 
       newButton.addEventListener("click", () => {
         setFormVisible(form.hidden);
@@ -487,13 +548,20 @@
         fields.disabled = true;
         status.textContent = "登録中…";
         try {
-          const { addDoc, collection, serverTimestamp } = await firestore();
+          const { collection, doc, runTransaction, serverTimestamp } = await firestore();
           if (request !== revision) return;
-          const ref = await addDoc(collection(db, "a2Issues"), {
-            ...issue, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          const ref = doc(collection(db, "a2Issues"));
+          const counter = doc(db, "_meta", "a2_issue_seq");
+          issue.number = await runTransaction(db, async (transaction) => {
+            const snapshot = await transaction.get(counter);
+            const number = snapshot.data().value + 1;
+            transaction.update(counter, { value: number, issueId: ref.id });
+            transaction.set(ref, { ...issue, number, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            return number;
           });
           if (request !== revision) return;
           list.prepend(issueRow(ref.id, issue));
+          applyRoute();
           form.reset();
           setFormVisible(false);
           newButton.focus();
@@ -507,7 +575,9 @@
 
       return (user) => {
         close();
-        button.hidden = !user;
+        signedIn = Boolean(user);
+        button.hidden = !signedIn;
+        syncIssuesRoute();
       };
     }
 
@@ -549,8 +619,9 @@
         updateChiraAuth(user);
         updateIssuesAuth(user);
         updateWikiAuth(user);
-        authState.textContent = user ? "ログイン済み" : "";
-        authButton.textContent = user ? "ログアウト" : "ログイン";
+        authMenu.open = false;
+        authMenu.hidden = !user;
+        authButton.hidden = Boolean(user);
         authButton.disabled = false;
         canadaResult.textContent = user && canadaCheck ? "Firestore を読み込み中…" : "";
         if (!user || !canadaCheck) return;
@@ -566,10 +637,11 @@
         }
       });
 
-      authButton.addEventListener("click", async () => {
-        const signingOut = Boolean(auth.currentUser);
+      async function changeAuth(event) {
+        const action = event.currentTarget;
+        const signingOut = action === signoutButton;
         authError.textContent = "";
-        authButton.disabled = true;
+        action.disabled = true;
         try {
           if (signingOut) {
             await signOut(auth);
@@ -581,9 +653,11 @@
             showError(error, signingOut ? "ログアウトできませんでした。" : "Google ログインに失敗しました。");
           }
         } finally {
-          authButton.disabled = false;
+          action.disabled = false;
         }
-      });
+      }
+      authButton.addEventListener("click", changeAuth);
+      signoutButton.addEventListener("click", changeAuth);
     }
 
     setupAuth().catch((error) => {
