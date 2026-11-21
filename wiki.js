@@ -70,6 +70,8 @@ export function setupWiki(app) {
   const form = document.querySelector("#wiki-form");
   const fields = form.querySelector("fieldset");
   const titleInput = form.elements.namedItem("title");
+  const readingInput = form.elements.namedItem("reading");
+  const back = document.querySelector("#wiki-back");
   const bodyInput = form.elements.namedItem("body");
   const linkPicker = form.elements.namedItem("link");
   const insert = document.querySelector("#wiki-insert");
@@ -94,7 +96,7 @@ export function setupWiki(app) {
     ready = saving = false;
     pages.clear();
     selected = editing = "";
-    panel.hidden = form.hidden = article.hidden = true;
+    panel.hidden = form.hidden = article.hidden = back.hidden = true;
     fields.disabled = false;
     create.disabled = true;
     menu.setAttribute("aria-expanded", "false");
@@ -105,17 +107,41 @@ export function setupWiki(app) {
     body.replaceChildren();
   }
 
+  function groupOf(page) {
+    const initial = (page.reading?.trim() || page.title.trim()).normalize("NFKC").normalize("NFD")[0] ?? "";
+    if (/[A-Za-z]/.test(initial)) return "アルファベット";
+    const kana = /[ァ-ヶ]/.test(initial) ? String.fromCharCode(initial.charCodeAt(0) - 0x60) : initial;
+    const rows = {
+      あ: "あぁいぃうぅえぇおぉ", か: "かきくけこゕゖ", さ: "さしすせそ",
+      た: "たちつってと", な: "なにぬねの", は: "はひふへほ",
+      ま: "まみむめも", や: "やゃゆゅよょ", ら: "らりるれろ", わ: "わゎゐゑをん",
+    };
+    return Object.entries(rows).find(([, members]) => kana && members.includes(kana))?.[0] ?? "その他";
+  }
+
   function renderList() {
     list.replaceChildren();
-    const sorted = [...pages].sort((a, b) => a[1].title.localeCompare(b[1].title, "ja"));
-    for (const [id, page] of sorted) {
-      const item = document.createElement("li");
-      const link = document.createElement("a");
-      link.href = "#wiki-" + id;
-      link.textContent = page.title;
-      if (id === selected) link.setAttribute("aria-current", "page");
-      item.append(link);
-      list.append(item);
+    const buckets = new Map([..."あかさたなはまやらわ", "アルファベット", "その他"].map(key => [key, []]));
+    const sorted = [...pages].sort((a, b) => (a[1].reading || a[1].title).localeCompare(b[1].reading || b[1].title, "ja"));
+    for (const entry of sorted) buckets.get(groupOf(entry[1])).push(entry);
+    for (const [group, entries] of buckets) {
+      if (!entries.length) continue;
+      const row = document.createElement("li");
+      const section = document.createElement("details");
+      const label = document.createElement("summary");
+      label.textContent = group.length === 1 ? group + "行" : group;
+      const terms = document.createElement("ul");
+      for (const [id, page] of entries) {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = "#wiki-" + id;
+        link.textContent = page.title;
+        item.append(link);
+        terms.append(item);
+      }
+      section.append(label, terms);
+      row.append(section);
+      list.append(row);
     }
   }
 
@@ -127,6 +153,8 @@ export function setupWiki(app) {
     linkPicker.replaceChildren();
     renderList();
     const page = pages.get(id);
+    list.hidden = Boolean(page);
+    back.hidden = !id;
     article.hidden = !page;
     heading.textContent = page?.title ?? "";
     body.replaceChildren();
@@ -179,6 +207,7 @@ export function setupWiki(app) {
     editing = id;
     const page = pages.get(id);
     titleInput.value = page?.title ?? "";
+    readingInput.value = page?.reading ?? "";
     bodyInput.value = page?.body ?? "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
@@ -192,6 +221,7 @@ export function setupWiki(app) {
       linkPicker.append(option);
     }
     form.hidden = false;
+    list.hidden = true;
     article.hidden = true;
     status.textContent = "";
     titleInput.focus();
@@ -223,7 +253,7 @@ export function setupWiki(app) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!ready || saving) return;
-    const page = { title: titleInput.value.trim(), body: bodyInput.value.trim() };
+    const page = { title: titleInput.value.trim(), reading: readingInput.value.trim(), body: bodyInput.value.trim() };
     if (!page.title || !page.body) {
       status.textContent = "タイトルと本文を入力してください。";
       return;
