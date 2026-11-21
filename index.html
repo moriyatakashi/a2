@@ -270,6 +270,7 @@
       });
       let revision = 0;
       let expiryTimer;
+      let signedIn = false;
 
       function close() {
         revision++;
@@ -297,11 +298,12 @@
         }
       }
 
-      button.addEventListener("click", async () => {
-        if (!panel.hidden) {
+      async function syncChiraRoute() {
+        if (!signedIn || location.hash !== "#chira") {
           close();
           return;
         }
+        if (!panel.hidden) return;
         const request = ++revision;
         panel.hidden = false;
         button.setAttribute("aria-expanded", "true");
@@ -343,11 +345,18 @@
             ? "チラ裏を読む権限がありません。"
             : "チラ裏を読み込めませんでした。開き直してお試しください。";
         }
+      }
+
+      button.addEventListener("click", () => {
+        location.hash = location.hash === "#chira" ? "" : "chira";
       });
+      window.addEventListener("hashchange", syncChiraRoute);
 
       return (user) => {
         close();
-        button.hidden = !user;
+        signedIn = Boolean(user);
+        button.hidden = !signedIn;
+        syncChiraRoute();
       };
     }
 
@@ -530,6 +539,7 @@
       const app = initializeApp(firebaseConfig, "a2");
       const auth = getAuth(app);
       let authRevision = 0;
+      const canadaCheck = new URLSearchParams(location.search).get("check") === "canada";
       const updateChiraAuth = setupChira(app);
       const updateIssuesAuth = setupIssues(app);
       const updateWikiAuth = setupWiki(app);
@@ -542,8 +552,8 @@
         authState.textContent = user ? "ログイン済み" : "";
         authButton.textContent = user ? "ログアウト" : "ログイン";
         authButton.disabled = false;
-        canadaResult.textContent = user ? "Firestore を読み込み中…" : "";
-        if (!user) return;
+        canadaResult.textContent = user && canadaCheck ? "Firestore を読み込み中…" : "";
+        if (!user || !canadaCheck) return;
 
         try {
           const message = await readCanada(app);
