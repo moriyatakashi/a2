@@ -213,7 +213,7 @@ export function setupWiki(app) {
       if (request !== feedbackRequest) return;
       savedNote = snapshot.data()?.note ?? "";
       feedbackInput.value = savedNote;
-      feedback.open = Boolean(savedNote);
+      if (savedNote) feedback.open = true;
       feedback.querySelector("summary").textContent = savedNote ? "次回の修正メモ（あり）" : "次回の修正メモ";
       feedbackStatus.textContent = "";
       feedbackFields.disabled = false;
