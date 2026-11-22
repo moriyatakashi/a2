@@ -77,6 +77,29 @@ export function setupWiki(app) {
   const linkPicker = form.elements.namedItem("link");
   const insert = document.querySelector("#wiki-insert");
   const cancel = document.querySelector("#wiki-cancel");
+  const feedback = document.createElement("details");
+  feedback.hidden = true;
+  feedback.innerHTML = `
+    <summary>次回の修正メモ</summary>
+    <form>
+      <fieldset disabled>
+        <label>このページで困ったこと
+          <textarea name="note" rows="3" maxlength="2000" placeholder="例：冒頭の「認証」から用語ページを開きたい"></textarea>
+        </label>
+        <div class="wiki-actions"><button type="submit">メモを保存</button></div>
+      </fieldset>
+      <p role="status"></p>
+      <button type="button" hidden>読み込みを再試行</button>
+    </form>`;
+  form.before(feedback);
+  const feedbackForm = feedback.querySelector("form");
+  const feedbackFields = feedbackForm.querySelector("fieldset");
+  const feedbackInput = feedbackForm.elements.namedItem("note");
+  const feedbackStatus = feedbackForm.querySelector('[role="status"]');
+  const feedbackRetry = feedbackForm.querySelector('button[type="button"]');
+  let feedbackPage = "";
+  let feedbackRequest = 0;
+  let savedNote = "";
   const pages = new Map();
   let user;
   let selected = "";
@@ -106,6 +129,7 @@ export function setupWiki(app) {
     linkPicker.replaceChildren();
     heading.textContent = status.textContent = "";
     body.replaceChildren();
+    showFeedback("");
   }
 
   function groupOf(page) {
@@ -161,12 +185,85 @@ export function setupWiki(app) {
     heading.textContent = page?.title ?? "";
     body.replaceChildren();
     if (page) renderMarkdown(body, page.body, pages);
+    showFeedback(page ? id : "");
     status.textContent = id && !page ? "用語が見つかりません。" : pages.size ? "" : "用語はまだありません。";
   }
 
   async function firestore() {
     return import("https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js");
   }
+
+  async function showFeedback(id, retry = false) {
+    if (id === feedbackPage && !retry) return;
+    const request = ++feedbackRequest;
+    feedbackPage = id;
+    feedback.hidden = !id;
+    if (!retry) feedback.open = false;
+    feedbackFields.disabled = true;
+    feedbackRetry.hidden = true;
+    feedbackInput.value = savedNote = "";
+    feedbackStatus.textContent = "";
+    feedback.querySelector("summary").textContent = "次回の修正メモ";
+    if (!id) return;
+    feedbackStatus.textContent = "メモを読み込み中…";
+    try {
+      const { doc, getDocFromServer, getFirestore } = await firestore();
+      if (request !== feedbackRequest) return;
+      const snapshot = await getDocFromServer(doc(getFirestore(app), "a2WikiFeedback", id));
+      if (request !== feedbackRequest) return;
+      savedNote = snapshot.data()?.note ?? "";
+      feedbackInput.value = savedNote;
+      feedback.open = Boolean(savedNote);
+      feedback.querySelector("summary").textContent = savedNote ? "次回の修正メモ（あり）" : "次回の修正メモ";
+      feedbackStatus.textContent = "";
+      feedbackFields.disabled = false;
+    } catch {
+      if (request !== feedbackRequest) return;
+      feedbackStatus.textContent = "メモを読み込めませんでした。";
+      feedbackRetry.hidden = false;
+    }
+  }
+
+  feedbackRetry.addEventListener("click", () => showFeedback(feedbackPage, true));
+  feedbackForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!feedbackPage || feedbackFields.disabled) return;
+    const id = feedbackPage;
+    const request = feedbackRequest;
+    const previous = savedNote;
+    const note = feedbackInput.value.trim();
+    if (note === previous) {
+      feedbackStatus.textContent = "変更はありません。";
+      return;
+    }
+    feedbackFields.disabled = true;
+    feedbackStatus.textContent = "メモを保存中…";
+    try {
+      const { doc, getFirestore, runTransaction, serverTimestamp } = await firestore();
+      if (request !== feedbackRequest) return;
+      const db = getFirestore(app);
+      const ref = doc(db, "a2WikiFeedback", id);
+      const saved = await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(ref);
+        if ((snapshot.data()?.note ?? "") !== previous) return false;
+        transaction.set(ref, { note, updatedAt: serverTimestamp() });
+        return true;
+      });
+      if (request !== feedbackRequest) return;
+      if (!saved) {
+        feedbackStatus.textContent = "別の画面でメモが更新されました。入力を控えてから、最新のメモを読み込んでください。";
+        feedbackRetry.hidden = false;
+        return;
+      }
+      savedNote = feedbackInput.value = note;
+      feedback.querySelector("summary").textContent = note ? "次回の修正メモ（あり）" : "次回の修正メモ";
+      feedbackStatus.textContent = "メモを保存しました。";
+    } catch {
+      if (request === feedbackRequest) feedbackStatus.textContent = "メモを保存できませんでした。";
+    } finally {
+      if (request === feedbackRequest) feedbackFields.disabled = false;
+    }
+  });
 
   async function syncRoute() {
     const id = wikiRoute();
@@ -226,6 +323,7 @@ export function setupWiki(app) {
     intro.hidden = true;
     list.hidden = true;
     article.hidden = true;
+    showFeedback(page ? id : "");
     status.textContent = "";
     titleInput.focus();
   }
