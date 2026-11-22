@@ -172,6 +172,11 @@
     #issue-list p { white-space: pre-wrap; overflow-wrap: anywhere; }
     #issue-list label { display: block; margin-bottom: .65rem; }
 
+    #wiki-intro { margin-block: .75rem; padding: .65rem .85rem; border: 1px solid var(--line); border-radius: .3rem; }
+    #wiki-intro h3, #wiki-intro p { margin: 0; }
+    #wiki-intro h3 { font-size: 1rem; }
+    #wiki-intro a { color: var(--link); }
+    #wiki-intro-links { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
     #wiki-list { list-style: none; padding: 0; }
     #wiki-list summary { cursor: pointer; padding-block: .35rem; }
     #wiki-back { color: var(--link); }
@@ -242,6 +247,14 @@
       <button id="wiki-new" type="button" disabled>新規ページ</button>
       <p id="wiki-status" role="status"></p>
       <a id="wiki-back" href="#wiki" hidden>用語一覧へ</a>
+      <aside id="wiki-intro" aria-labelledby="wiki-intro-title" hidden>
+        <h3 id="wiki-intro-title"><a href="#wiki-RorekiOverview000001">ろれき</a></h3>
+        <p>ろれきの Wiki には、用語や使い方、運用の記録を残しています。</p>
+        <p id="wiki-intro-links">
+          <a href="#wiki-WikiConnectA2Guide01">Wikiの接続と更新</a>
+          <a href="#wiki-CodexWikiReview00001">CodexがWikiを更新するときの注意点</a>
+        </p>
+      </aside>
       <ul id="wiki-list"></ul>
       <article id="wiki-article" hidden>
         <h3 id="wiki-page-title"></h3>
@@ -266,7 +279,7 @@
     </section>
   </main>
   <script type="module">
-    import { setupWiki } from "./wiki.js?rev=index-groups";
+    import { setupWiki } from "./wiki.js?rev=roreki-intro";
 
     const authButton = document.querySelector("#auth-button");
     const authMenu = document.querySelector("#auth-menu");

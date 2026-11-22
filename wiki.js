@@ -60,6 +60,7 @@ function renderMarkdown(target, source, pages) {
 export function setupWiki(app) {
   const menu = document.querySelector("#wiki-button");
   const panel = document.querySelector("#wiki-panel");
+  const intro = document.querySelector("#wiki-intro");
   const list = document.querySelector("#wiki-list");
   const status = document.querySelector("#wiki-status");
   const create = document.querySelector("#wiki-new");
@@ -96,7 +97,7 @@ export function setupWiki(app) {
     ready = saving = false;
     pages.clear();
     selected = editing = "";
-    panel.hidden = form.hidden = article.hidden = back.hidden = true;
+    panel.hidden = form.hidden = article.hidden = back.hidden = intro.hidden = true;
     fields.disabled = false;
     create.disabled = true;
     menu.setAttribute("aria-expanded", "false");
@@ -153,6 +154,7 @@ export function setupWiki(app) {
     linkPicker.replaceChildren();
     renderList();
     const page = pages.get(id);
+    intro.hidden = Boolean(id);
     list.hidden = Boolean(page);
     back.hidden = !id;
     article.hidden = !page;
@@ -221,6 +223,7 @@ export function setupWiki(app) {
       linkPicker.append(option);
     }
     form.hidden = false;
+    intro.hidden = true;
     list.hidden = true;
     article.hidden = true;
     status.textContent = "";
