@@ -10,9 +10,13 @@ function renderInline(target, source, pages) {
       link.href = "#wiki-" + match[2];
       link.textContent = pages.get(match[2])?.title ?? match[1];
       target.append(link);
+    } else if (match[3]) {
+      const node = document.createElement("strong");
+      renderInline(node, match[3], pages);
+      target.append(node);
     } else {
-      const node = document.createElement(match[3] ? "strong" : "code");
-      node.textContent = match[3] ?? match[4];
+      const node = document.createElement("code");
+      node.textContent = match[4];
       target.append(node);
     }
     end = match.index + match[0].length;
